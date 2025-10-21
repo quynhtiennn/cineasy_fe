@@ -1,14 +1,10 @@
   "use client"
 
+import { StringDecoder } from "node:string_decoder"
 import { createContext, useContext, useState, type ReactNode } from "react"
 
 interface Booking {
-  movieId: string
-  movieTitle: string
-  showtime: string
-  date: string
-  seats: string[]
-  totalPrice: number
+  tickets: string[]
 }
 
 interface User {

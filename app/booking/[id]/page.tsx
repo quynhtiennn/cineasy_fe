@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getMovieById } from "@/lib/movies-data"
+import { getShowtimeById , type Ticket } from "@/lib/showtimes-data"
 import { useBooking } from "@/contexts/booking-context"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,17 +13,36 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, CreditCard, Check } from "lucide-react"
 import Link from "next/link"
 
-const ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"]
-const SEATS_PER_ROW = 10
 
-export default function BookingPage({ params }: { params: { id: string } }) {
+export default function BookingPage({ params }: { params: { id: number } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const showtimeId = searchParams.get("showtime")
   const { addBooking, user } = useBooking()
 
-  const movie = getMovieById(params.id)
-  const showtime = movie?.showtimes.find((s) => s.id === showtimeId)
+  const showtime = useState<null | Awaited<ReturnType<typeof getShowtimeById>>>(null)[0];
+
+  useEffect(() => {
+    if (showtimeId) {
+      getShowtimeById(Number(showtimeId))
+        .then((data) => {
+          showtime[1](data);
+        })
+        .catch(() => {
+          router.replace("/");
+        });
+    } else {
+      router.replace("/");
+    }
+  }, [showtimeId, router, showtime]);
+
+
+
+  const totalRows = showtime.totalRows;
+  const ROWS = Array.from({ length: totalRows }, (_, i) =>
+              String.fromCharCode(65 + i));
+  const SEATS_PER_ROW = showtime.seatsPerRow;
+
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [step, setStep] = useState<"seats" | "payment" | "confirmation">("seats")
@@ -32,22 +51,15 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   const [expiryDate, setExpiryDate] = useState("")
   const [cvv, setCvv] = useState("")
 
-  // Generate random occupied seats
+  // Determine occupied seats from showtime tickets
   const [occupiedSeats] = useState<string[]>(() => {
-    const seats: string[] = []
-    const occupiedCount = showtime ? 80 - showtime.availableSeats : 30
-    while (seats.length < occupiedCount) {
-      const row = ROWS[Math.floor(Math.random() * ROWS.length)]
-      const seat = Math.floor(Math.random() * SEATS_PER_ROW) + 1
-      const seatId = `${row}${seat}`
-      if (!seats.includes(seatId)) {
-        seats.push(seatId)
-      }
-    }
-    return seats
+    if (!showtime || !showtime.tickets) return [];
+  return showtime.tickets
+    .filter((t: Ticket) => !t.available)
+    .map((t: Ticket) => `${t.rowLabel}${t.seatNumber}`);
   })
 
-  if (!movie || !showtime) {
+  if (!showtime) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
         <Card className="p-8 text-center">
@@ -67,7 +79,12 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     setSelectedSeats((prev) => (prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]))
   }
 
-  const totalPrice = selectedSeats.length * showtime.price
+  const totalPrice = selectedSeats.reduce((total, seatId) => {
+  const ticket = showtime.tickets.find(
+    (t: Ticket) => `${t.rowLabel}${t.seatNumber}` === seatId
+  );
+  return total + (ticket ? ticket.price : 0);
+}, 0);
 
   const handlePayment = (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,12 +92,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     // Simulate payment processing
     setTimeout(() => {
       addBooking({
-        movieId: movie.id,
-        movieTitle: movie.title,
-        showtime: showtime.time,
-        date: showtime.date,
-        seats: selectedSeats,
-        totalPrice,
+        tickets: selectedSeats,
       })
       setStep("confirmation")
     }, 1000)
@@ -99,11 +111,11 @@ export default function BookingPage({ params }: { params: { id: string } }) {
           <div className="mt-6 space-y-2 rounded-lg bg-muted p-4 text-left">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Movie</span>
-              <span className="text-sm font-medium">{movie.title}</span>
+              <span className="text-sm font-medium">{showtime.movieTitle}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Showtime</span>
-              <span className="text-sm font-medium">{showtime.time}</span>
+              <span className="text-sm font-medium">{showtime.startTime}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Seats</span>
@@ -198,9 +210,18 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 <h3 className="mb-4 font-semibold">Order Summary</h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="font-medium">{movie.title}</p>
+                    <p className="font-medium">{showtime.movieTitle}</p>
                     <p className="text-sm text-muted-foreground">
-                      {showtime.time} • {new Date(showtime.date).toLocaleDateString()}
+                      {new Date(showtime.startTime).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })} 
+                      • 
+                      {new Date(showtime.startTime).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </p>
                   </div>
 
@@ -212,8 +233,13 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tickets</span>
                       <span>
-                        {selectedSeats.length} × ${showtime.price}
-                      </span>
+                      ${selectedSeats.reduce((total, seatId) => {
+                        const ticket = showtime.tickets.find(
+                          (t: any) => `${t.rowLabel}${t.seatNumber}` === seatId
+                        );
+                        return total + (ticket ? ticket.price : showtime.price ?? 0);
+                      }, 0)}
+                    </span>
                     </div>
                   </div>
 
@@ -232,7 +258,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8">
-      <Link href={`/movies/${movie.id}`}>
+      <Link href={`/movies/${showtime.movieId}`}>
         <Button variant="ghost" className="mb-6 gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back to Movie
@@ -241,12 +267,16 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">{movie.title}</h1>
+          <h1 className="text-3xl font-bold">{showtime.movieTitle}</h1>
           <p className="text-muted-foreground">
-            {showtime.time} •{" "}
-            {new Date(showtime.date).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
+            {new Date(showtime.startTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })} 
+            • 
+            {new Date(showtime.startTime).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
               day: "numeric",
             })}
           </p>
@@ -322,10 +352,19 @@ export default function BookingPage({ params }: { params: { id: string } }) {
               <h3 className="mb-4 font-semibold">Booking Summary</h3>
               <div className="space-y-4">
                 <div>
-                  <p className="font-medium">{movie.title}</p>
+                  <p className="font-medium">{showtime.movieTitle}</p>
                   <p className="text-sm text-muted-foreground">
-                    {showtime.time} • {new Date(showtime.date).toLocaleDateString()}
-                  </p>
+                    {new Date(showtime.startTime).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })} 
+                      • 
+                      {new Date(showtime.startTime).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
                 </div>
 
                 {selectedSeats.length > 0 && (
@@ -337,8 +376,13 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tickets</span>
                       <span>
-                        {selectedSeats.length} × ${showtime.price}
-                      </span>
+                      ${selectedSeats.reduce((total, seatId) => {
+                        const ticket = showtime.tickets.find(
+                          (t: any) => `${t.rowLabel}${t.seatNumber}` === seatId
+                        );
+                        return total + (ticket ? ticket.price : showtime.price ?? 0);
+                      }, 0)}
+                    </span>
                     </div>
                   </div>
                 )}

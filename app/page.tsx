@@ -8,8 +8,6 @@ import { Clock } from "lucide-react"
 export default async function HomePage() {
   const movies = await getMovies();
 
-  console.log(movies);
-
   return (
     <main className="min-h-screen">
       {/* Hero Section */}

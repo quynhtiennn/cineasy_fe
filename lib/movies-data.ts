@@ -1,24 +1,23 @@
 export interface Movie {
-  id: string
-  title: string
-  description: string
-  genre: string
-  duration: number
-  rating: string
-  releaseDate: string
-  posterUrl: string
-  backdropUrl: string
-  director: string
-  cast: string[]
-  showtimes: Showtime[]
+    id: number;
+    title: string;
+    description: string;
+    genre: string;
+    duration: number;
+    rating: string;
+    releaseDate: string;
+    posterUrl: string;
+    backdropUrl: string;
+    director: string;
+    cast: string[];
+    showtimeSummaries: ShowtimeSummary[];
 }
 
-export interface Showtime {
-  id: string
-  time: string
-  date: string
-  price: number
-  availableSeats: number
+export interface ShowtimeSummary {
+    id: number;
+    startTime: string;
+    price: number;
+    availableCount: number;
 }
 /*
 export const movies: Movie[] = [
@@ -141,11 +140,13 @@ export const movies: Movie[] = [
 */
 
 export async function getMovies(): Promise<Movie[]> {
-  const res = await fetch("http://localhost:8080/movies", { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch movies");
+    const res = await fetch("http://localhost:8080/movies", {
+        cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Failed to fetch movies");
 
-  const data = await res.json();
-  return data.result;
+    const data = await res.json();
+    return data.result;
 }
 
 /*
@@ -154,11 +155,12 @@ export function getMovieById(id: string): Movie | undefined {
 }
 */
 
-export async function getMovieById(id: string): Promise<Movie> {
-  const res = await fetch(`http://localhost:8080/movies/${id}`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Movie not found");
+export async function getMovieById(id: number): Promise<Movie> {
+    const res = await fetch(`http://localhost:8080/movies/${id}`, {
+        cache: "no-store",
+    });
+    if (!res.ok) throw new Error("Movie not found");
 
-  const data = await res.json();
-  return data.result; 
+    const data = await res.json();
+    return data.result;
 }
-
