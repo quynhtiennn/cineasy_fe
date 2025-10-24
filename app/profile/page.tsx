@@ -10,6 +10,7 @@ import Link from "next/link"
 export default function ProfilePage() {
   const { user } = useBooking()
 
+
   if (!user) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
@@ -36,7 +37,7 @@ export default function ProfilePage() {
                 <h1 className="text-3xl font-bold">{user.name}</h1>
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <Mail className="h-4 w-4" />
-                  <span>{user.email}</span>
+                  <span>{user.name}</span>
                 </div>
               </div>
 
@@ -75,18 +76,31 @@ export default function ProfilePage() {
             <div className="space-y-4">
               {user.bookings.map((booking, index) => (
                 <Card key={index} className="p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  {/* 🔹 Top line: Booking ID (left) and Booking time (right) */}
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Booking ID: {booking.id}</span>
+                    <span>
+                      {new Date(booking.bookingTime).toLocaleString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-3">
                       <div>
                         <h3 className="text-xl font-semibold">{booking.movieTitle}</h3>
-                        <Badge className="mt-1">Confirmed</Badge>
+                        <Badge className="mt-1">{booking.bookingStatus}</Badge>
                       </div>
 
                       <div className="grid gap-2 text-sm sm:grid-cols-2">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="h-4 w-4" />
                           <span>
-                            {new Date(booking.date).toLocaleDateString("en-US", {
+                            {new Date(booking.showtimeStartTime).toLocaleDateString("en-US", {
                               weekday: "long",
                               month: "long",
                               day: "numeric",
@@ -96,12 +110,21 @@ export default function ProfilePage() {
 
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Ticket className="h-4 w-4" />
-                          <span>{booking.showtime}</span>
+                          <span>{new Date(booking.showtimeStartTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            })}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <MapPin className="h-4 w-4" />
-                          <span>Seats: {booking.seats.join(", ")}</span>
+                          <span>
+                            Seats:{" "}
+                            {booking.tickets
+                              .map((ticket) => `${ticket.rowLabel}${ticket.seatNumber}`)
+                              .join(", ")}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -109,7 +132,7 @@ export default function ProfilePage() {
                     <div className="text-right">
                       <p className="text-2xl font-bold">${booking.totalPrice}</p>
                       <p className="text-sm text-muted-foreground">
-                        {booking.seats.length} {booking.seats.length === 1 ? "ticket" : "tickets"}
+                        {booking.tickets.length} {booking.tickets.length === 1 ? "ticket" : "tickets"}
                       </p>
                     </div>
                   </div>

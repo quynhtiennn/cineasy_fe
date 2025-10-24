@@ -14,7 +14,7 @@ import { ArrowLeft, CreditCard, Check } from "lucide-react"
 import Link from "next/link"
 
 
-export default function BookingPage({ params }: { params: { id: string } }) {
+export default function ShowtimePage({ params }: { params: { id: string } }) {
 
   const router = useRouter()
   const id = params.id
@@ -49,8 +49,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
         <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold">Booking not found</h2>
-          <p className="mt-2 text-muted-foreground">Please select a valid showtime</p>
+          <h2 className="text-2xl font-bold">Showtime not found</h2>
           <Link href="/">
             <Button className="mt-4">Back to Home</Button>
           </Link>

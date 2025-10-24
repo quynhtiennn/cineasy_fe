@@ -49,7 +49,7 @@ export default async function HomePage() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {movies.map((movie) => (
-            <Link key={movie.id} href={`/movies/${movie.id}`}>
+            <Link key={movie.id} href={`/movie/${movie.id}`}>
               <Card className="group overflow-hidden transition-all hover:scale-105 hover:shadow-xl">
                 <div className="relative aspect-[2/3] overflow-hidden">
                   <img
@@ -97,10 +97,5 @@ export default async function HomePage() {
     </main>
   )
 }
-/*
-{movie.genre.slice(0, 2).map((genre) => (
-                      <Badge key={genre} variant="secondary" className="text-xs">
-                        {genre}
-                      </Badge>
-                    ))}
-*/
+
+

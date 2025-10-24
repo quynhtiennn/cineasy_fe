@@ -4,15 +4,9 @@ export interface Ticket {
     available: boolean;
     rowLabel: string;
     seatNumber: number;
-
 }
 
-export interface Seat {
-    id: number;
-    rowLabel: string;
-    seatNumber: number;
-    seatType: string;
-}
+
 
 export interface Showtime {
     id: number;
@@ -34,6 +28,13 @@ export async function getShowtimeById(id: number): Promise<Showtime> {
 
     const data = await res.json();
     return data.result;
+}
+
+export interface Seat {
+    id: number;
+    rowLabel: string;
+    seatNumber: number;
+    seatType: string;
 }
 
 /* export async function getMovies(): Promise<Movie[]> {

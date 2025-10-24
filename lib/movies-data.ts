@@ -149,12 +149,6 @@ export async function getMovies(): Promise<Movie[]> {
     return data.result;
 }
 
-/*
-export function getMovieById(id: string): Movie | undefined {
-  return movies.find((movie) => movie.id === id)
-}
-*/
-
 export async function getMovieById(id: number): Promise<Movie> {
     const res = await fetch(`http://localhost:8080/movies/${id}`, {
         cache: "no-store",

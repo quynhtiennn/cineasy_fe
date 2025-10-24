@@ -5,14 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, Star, User } from "lucide-react";
+import ShowtimeList from "@/components/showtime-list"
 
-export default async function MovieDetailPage({
-    params,
-}: {
-    params: { id: number };
-}) {
+export default async function MovieDetailPage({params,}: {params: { id: number };}) {
     const movie = await getMovieById(params.id);
-    console.log(movie);
 
     if (!movie) {
         notFound();
@@ -126,68 +122,10 @@ export default async function MovieDetailPage({
                 </div>
 
                 {movie.showtimeSummaries && movie.showtimeSummaries.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {movie.showtimeSummaries.map((showtimeSummary) => (
-                            <Link
-                                key={showtimeSummary.id}
-                                href={`/booking/${movie.id}?showtime=${showtimeSummary.id}`}
-                            >
-                                <Card className="group cursor-pointer p-6 transition-all hover:scale-105 hover:border-primary hover:shadow-lg">
-                                    <div className="space-y-3">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-bold">
-                                            {new Date(showtimeSummary.startTime).toLocaleTimeString([], {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
-                                          </p>
-                                          <p className="text-sm text-muted-foreground">
-                                            {new Date(showtimeSummary.startTime).toLocaleDateString("en-US", {
-                                              weekday: "short",
-                                              month: "short",
-                                              day: "numeric",
-                                            })}
-                                          </p>
-                                        </div>
-
-                                        <div className="space-y-1 border-t border-border pt-3">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">
-                                                    Price
-                                                </span>
-                                                <span className="font-semibold">
-                                                    from 80.000 VND
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">
-                                                    Available
-                                                </span>
-                                                <span
-                                                    className={
-                                                        showtimeSummary.availableCount <
-                                                        20
-                                                            ? "text-destructive"
-                                                            : "text-green-500"
-                                                    }
-                                                >
-                                                    {showtimeSummary.availableCount}{" "}
-                                                    seats
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <Button className="w-full" size="sm">
-                                            Select
-                                        </Button>
-                                    </div>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
+                    <ShowtimeList showtimes={movie.showtimeSummaries} />
                 ) : (
                     <p className="text-muted-foreground">
-                        No showtimes available for this movie.
+                    No showtimes available for this movie.
                     </p>
                 )}
             </section>
