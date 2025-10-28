@@ -27,14 +27,16 @@ export default async function HomePage() {
             <h1 className="text-balance text-5xl font-bold leading-tight md:text-6xl">{movies[0].title}</h1>
             <p className="text-pretty text-lg text-muted-foreground">{movies[0].description}</p>
             <div className="flex flex-wrap gap-4">
-              <Link href={`/movies/${movies[0].id}`}>
+              <Link href={`/movie/${movies[0].id}`}>
                 <Button size="lg" className="gap-2">
                   Book Tickets
                 </Button>
               </Link>
-              <Button size="lg" variant="outline">
-                Watch Trailer
-              </Button>
+              <Link href={`/movie/${movies[0].id}`}>
+                <Button size="lg" variant="outline">
+                More details
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

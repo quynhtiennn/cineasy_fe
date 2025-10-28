@@ -1,14 +1,49 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useBooking } from "@/contexts/booking-context"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { User, Mail, Ticket, Calendar, MapPin } from "lucide-react"
 import Link from "next/link"
+import { toast } from "@/hooks/use-toast"
+
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
+
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export default function ProfilePage() {
-  const { user } = useBooking()
+  const router = useRouter()
+  const { user, token, refreshUser } = useBooking()
+
+  const [mounted, setMounted] = useState(false)
+
+  // dialog control
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // During SSR and before hydration, render a neutral layout
+  if (!mounted) {
+    return <main className="container mx-auto min-h-screen px-4 py-8" />
+  }
 
 
   if (!user) {
@@ -16,11 +51,63 @@ export default function ProfilePage() {
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
         <Card className="p-8 text-center">
           <h2 className="text-2xl font-bold">Please log in</h2>
-          <p className="mt-2 text-muted-foreground">You need to be logged in to view your profile</p>
+          <p className="mt-2 text-muted-foreground"><a href="/login">You need to log in to view your profile</a></p>
         </Card>
       </div>
     )
   }
+
+  // open confirm dialog for a booking
+  const openCancelDialog = (bookingId: string) => {
+    setSelectedBookingId(bookingId)
+    setDialogOpen(true)
+  }
+
+  // confirm cancel action
+  const handleConfirmCancel = async () => {
+    if (!selectedBookingId) return
+    setIsCancelling(true)
+
+    try {
+      const res = await fetch(`${API_BASE}/bookings/${selectedBookingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "CANCELLED" }),
+      })
+
+      if (!res.ok) {
+        // try to parse error body for helpful message
+        let errMsg = "Failed to cancel booking"
+        try {
+          const json = await res.json()
+          if (json?.message) errMsg = json.message
+        } catch {
+          /* ignore */
+        }
+        throw new Error(errMsg)
+      }
+
+      // refresh user bookings
+      await refreshUser()
+
+      toast({ title: "Booking cancelled", description: "Your booking was cancelled." })
+      setDialogOpen(false)
+      setSelectedBookingId(null)
+    } catch (err) {
+      console.error("Cancel failed:", err)
+      toast({
+        title: "Error",
+        description: (err as Error)?.message ?? "Failed to cancel booking. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCancelling(false)
+    }
+  }
+
 
   return (
     <main className="container mx-auto min-h-screen px-4 py-8">
@@ -136,6 +223,57 @@ export default function ProfilePage() {
                       </p>
                     </div>
                   </div>
+                
+                  {/* 🔹 Booking action buttons */}
+                  {(booking.bookingStatus === "PENDING" || booking.bookingStatus === "PAID") && (
+                    <div className="flex justify-end mt-4 gap-3">
+                      {booking.bookingStatus === "PENDING" && (
+                        <Button
+                          onClick={() => router.push(`/booking/${booking.id}`)}
+                        >
+                          Continue to Payment
+                        </Button>
+                      )}
+
+                      {/* open alert dialog for cancellation */}
+                      <AlertDialog open={dialogOpen && selectedBookingId === booking.id} onOpenChange={(open) => {
+                        // close if user dismisses dialog by clicking outside
+                        if (!open) {
+                          setDialogOpen(false)
+                          setSelectedBookingId(null)
+                        }
+                      }}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" onClick={() => openCancelDialog(booking.id)}>
+                            Cancel Booking
+                          </Button>
+                        </AlertDialogTrigger>
+
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel booking?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel this booking? This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => {
+                              setDialogOpen(false)
+                              setSelectedBookingId(null)
+                            }}>
+                              Keep Booking
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleConfirmCancel}
+                              disabled={isCancelling}
+                            >
+                              {isCancelling ? "Cancelling..." : "Yes, cancel"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>

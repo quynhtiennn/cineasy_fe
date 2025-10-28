@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Film } from "lucide-react"
 import { useBooking } from "@/contexts/booking-context"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export default function LoginPage() {
   const router = useRouter()
@@ -22,52 +23,16 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // ✅ If already logged in, skip login page and redirect directly
-  /* useEffect(() => {
-    if (user) {
-      router.replace(redirect)
-    }
-  }, [user, redirect, router])
+  
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-
-    if (!username || !password || (!isLogin && !confirmPassword)) {
-      setError("Please fill in all fields")
-      return
-    }
-
-    if (!isLogin && password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500)) // simulate API delay
-
-    try {
-      // Here you call your real login/signup API
-      login(username, password)
-
-      // ✅ Redirect back to previous page (showtime or home)
-      router.push(redirect)
-    } catch (err) {
-      setError("Invalid credentials. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  } */
-
-     // ✅ Skip login if already logged in
+     // Skip login if already logged in
   useEffect(() => {
     if (user) router.replace(redirect)
   }, [user, redirect, router])
 
-  // 🔥 Main submit handler for both login and signup
+  //  Main submit handler for both login and signup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Form submitted");
     setError("")
 
     if (!username || !password || (!isLogin && !confirmPassword)) {
@@ -83,8 +48,8 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const url = isLogin
-        ? "http://localhost:8080/auth/login"
-        : "http://localhost:8080/users"
+        ? `${API_BASE}/auth/login`
+        : `${API_BASE}/users`
       const body = JSON.stringify({ username, password })
 
       const res = await fetch(url, {

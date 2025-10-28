@@ -5,25 +5,43 @@ import { usePathname, useRouter } from "next/navigation"
 import { Film, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useBooking } from "@/contexts/booking-context"
+import { useEffect, useState } from "react"
 
 export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useBooking()
 
-  const handleLogout = () => {
-    logout()
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  if (!hydrated) {
+    // render nothing or a simple skeleton until hydration completes
+    return null
+  }
+
+  const handleLogout = async () => {
+    await logout()
     router.push("/")
   }
 
-  const isLoggedIn = user && user.name !== "guest@cinemax.com"
+  const isLoggedIn = ( user !== null )
+  // const isLoggedIn = user && user.name !== "guest@cinemax.com"
+
+  if (!hydrated) {
+  return (
+    <nav className="h-16 border-b border-border bg-background/95 backdrop-blur" />
+  )
+}
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           <Film className="h-6 w-6 text-primary" />
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CineMax</span>
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Cineasy</span>
         </Link>
         <div className="flex items-center gap-6">
           {isLoggedIn ? (
@@ -34,23 +52,23 @@ export function Navigation() {
                   {user?.name}
                 </Button>
               </Link>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            </>
-          ) : (
-              <Link href="/login">
-                <Button size="sm" className="bg-primary hover:bg-primary/90">
-                  Sign In
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
                 </Button>
-              </Link>
-          )}
+              </>
+            ) : (
+                <Link href="/login">
+                  <Button size="sm" className="bg-primary hover:bg-primary/90">
+                    Sign In
+                  </Button>
+                </Link>
+            )}
         </div>
       </div>
     </nav>

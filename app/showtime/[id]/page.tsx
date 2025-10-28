@@ -1,247 +1,130 @@
 "use client"
 
-
-import type React from "react"
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { getShowtimeById ,type Ticket, type Showtime } from "@/lib/showtimes-data"
+import { useRouter } from "next/navigation"
+import { use } from "react"
+import { type Ticket, type Showtime } from "@/lib/showtimes-data"
 import { useBooking } from "@/contexts/booking-context"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ArrowLeft, CreditCard, Check } from "lucide-react"
+import { ArrowLeft} from "lucide-react"
 import Link from "next/link"
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL 
 
-export default function ShowtimePage({ params }: { params: { id: string } }) {
-
+export default function ShowtimePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const id = params.id
-  const { addBooking, user } = useBooking()
-  const [showtime, setShowtime] = useState<Showtime | null>(null);
-  const [occupiedSeats, setOccupiedSeats] = useState<string[]>([]);
+  const { user, token, logout, refreshUser } = useBooking()
+  const [showtime, setShowtime] = useState<Showtime | null>(null)
+  const [occupiedSeats, setOccupiedSeats] = useState<string[]>([])
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
-  const [step, setStep] = useState<"seats" | "payment" | "confirmation">("seats")
-  const [cardNumber, setCardNumber] = useState("")
-  const [cardName, setCardName] = useState("")
-  const [expiryDate, setExpiryDate] = useState("")
-  const [cvv, setCvv] = useState("")
 
-  // ✅ LOGIN CHECK
+  const { id } = use(params)
+
+  //  LOGIN CHECK
   useEffect(() => {
     if (!user) {
-      router.push(`/login?redirect=/showtime/${id}`)}
+      router.push(`/login?redirect=/showtime/${id}`)
+    }
   }, [user, router, id])
 
+  //  FETCH SHOWTIME with Authorization header
   useEffect(() => {
-    getShowtimeById(Number(id)).then(data => {
-      setShowtime(data);
-      const seats = data.tickets
-        .filter(t => !t.available)
-        .map(t => `${t.rowLabel}${t.seatNumber}`);
-      setOccupiedSeats(seats);
-    });
-  }, [id]);
+    const fetchShowtime = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/showtimes/${id}`, {
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : {},
+        })
 
+        if (res.status === 401) {
+          // token invalid or expired
+          logout()
+          router.push(`/login?redirect=/showtime/${id}`)
+          return
+        }
 
-  if (!showtime) {
-    return (
-      <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
-        <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold">Showtime not found</h2>
-          <Link href="/">
-            <Button className="mt-4">Back to Home</Button>
-          </Link>
-        </Card>
-      </div>
-    )
-  }
+        if (!res.ok) throw new Error("Failed to fetch showtime")
 
-  const totalRows = showtime.totalRows;
-  const ROWS = Array.from({ length: totalRows }, (_, i) =>
-              String.fromCharCode(65 + i));
-  const SEATS_PER_ROW = showtime.seatsPerRow;
-  
+        const data = await res.json()
+        const showtimeData = data.result || data
+
+        setShowtime(showtimeData)
+
+        const seats = showtimeData.tickets
+          .filter((t: Ticket) => !t.available)
+          .map((t: Ticket) => `${t.rowLabel}${t.seatNumber}`)
+        setOccupiedSeats(seats)
+      } catch (err) {
+        console.error("Error fetching showtime:", err)
+      }
+    }
+
+    if (user) fetchShowtime()
+  }, [id, user, token, logout, router])
+
+  if (!showtime) return <div className="p-8 text-center">Loading...</div>
+
+  const totalRows = showtime.totalRows
+  const ROWS = Array.from({ length: totalRows }, (_, i) => String.fromCharCode(65 + i))
+  const SEATS_PER_ROW = showtime.seatsPerRow
+
   const toggleSeat = (seatId: string) => {
     if (occupiedSeats.includes(seatId)) return
-
-    setSelectedSeats((prev) => (prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]))
+    setSelectedSeats((prev) =>
+      prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]
+    )
   }
 
   const totalPrice = selectedSeats.reduce((total, seatId) => {
-  const ticket = showtime.tickets.find(
-    (t: Ticket) => `${t.rowLabel}${t.seatNumber}` === seatId
-  );
-  return total + (ticket ? ticket.price : 0);
-}, 0);
+    const ticket = showtime.tickets.find((t: Ticket) => `${t.rowLabel}${t.seatNumber}` === seatId)
+    return total + (ticket ? ticket.price : 0)
+  }, 0)
 
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault()
+  // Create booking before payment
+  const handleCreateBooking = async () => {
+    if (!user) return router.push(`/login?redirect=/showtime/${id}`)
 
-    // Simulate payment processing
-    setTimeout(() => {
-      addBooking({
-        tickets: selectedSeats,
+    try {
+      const selectedTicketIds = showtime.tickets
+        .filter((t) => selectedSeats.includes(`${t.rowLabel}${t.seatNumber}`))
+        .map((t) => t.id)
+
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tickets: selectedTicketIds,
+        }),
       })
-      setStep("confirmation")
-    }, 1000)
-  }
 
-  if (step === "confirmation") {
-    return (
-      <div className="container mx-auto flex min-h-screen items-center justify-center px-4">
-        <Card className="max-w-md p-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-            <Check className="h-8 w-8 text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold">Booking Confirmed!</h2>
-          <p className="mt-2 text-muted-foreground">Your tickets have been booked successfully</p>
+      if (res.status === 401) {
+        logout()
+        router.push(`/login?redirect=/showtime/${id}`)
+        return
+      }
 
-          <div className="mt-6 space-y-2 rounded-lg bg-muted p-4 text-left">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Movie</span>
-              <span className="text-sm font-medium">{showtime.movieTitle}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Showtime</span>
-              <span className="text-sm font-medium">{showtime.startTime}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Seats</span>
-              <span className="text-sm font-medium">{selectedSeats.join(", ")}</span>
-            </div>
-            <div className="flex justify-between border-t border-border pt-2">
-              <span className="text-sm font-medium">Total</span>
-              <span className="text-sm font-bold">${totalPrice}</span>
-            </div>
-          </div>
+      if (!res.ok) throw new Error("Failed to create booking")
 
-          <div className="mt-6 flex gap-3">
-            <Link href="/profile" className="flex-1">
-              <Button variant="outline" className="w-full bg-transparent">
-                View Bookings
-              </Button>
-            </Link>
-            <Link href="/" className="flex-1">
-              <Button className="w-full">Back to Home</Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    )
-  }
+      const data = await res.json()
+      const booking = data.result
+      
+      await refreshUser()
 
-  if (step === "payment") {
-    return (
-      <div className="container mx-auto min-h-screen px-4 py-8">
-        <Button variant="ghost" className="mb-6 gap-2" onClick={() => setStep("seats")}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to Seat Selection
-        </Button>
-
-        <div className="mx-auto max-w-4xl">
-          <h1 className="mb-8 text-3xl font-bold">Payment Details</h1>
-
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <form onSubmit={handlePayment} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Card Number</Label>
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cardName">Cardholder Name</Label>
-                    <Input
-                      id="cardName"
-                      placeholder="John Doe"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input
-                        id="expiry"
-                        placeholder="MM/YY"
-                        value={expiryDate}
-                        onChange={(e) => setExpiryDate(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" placeholder="123" value={cvv} onChange={(e) => setCvv(e.target.value)} required />
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full gap-2" size="lg">
-                    <CreditCard className="h-4 w-4" />
-                    Pay ${totalPrice}
-                  </Button>
-                </form>
-              </Card>
-            </div>
-
-            <div>
-              <Card className="sticky top-20 p-6">
-                <h3 className="mb-4 font-semibold">Order Summary</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-medium">{showtime.movieTitle}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(showtime.startTime).toLocaleTimeString([], {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })} 
-                      • 
-                      {new Date(showtime.startTime).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1 border-t border-border pt-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Seats</span>
-                      <span>{selectedSeats.join(", ")}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Number of Tickets</span>
-                      <span>{selectedSeats.length}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between border-t border-border pt-3 font-semibold">
-                    <span>Total</span>
-                    <span>${totalPrice}</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+      router.push(`/booking/${booking.id}`)
+    } catch (err) {
+      console.error("Booking error:", err)
+      alert("Could not create booking. Please try again.")
+    }
   }
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8">
-      <Link href={`/movies/${showtime.movieId}`}>
+      <Link href={`/movie/${showtime.movieId}`}>
         <Button variant="ghost" className="mb-6 gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back to Movie
@@ -373,7 +256,7 @@ export default function ShowtimePage({ params }: { params: { id: string } }) {
                   className="w-full"
                   size="lg"
                   disabled={selectedSeats.length === 0}
-                  onClick={() => setStep("payment")}
+                  onClick={handleCreateBooking}
                 >
                   Continue to Payment
                 </Button>
@@ -385,4 +268,3 @@ export default function ShowtimePage({ params }: { params: { id: string } }) {
     </div>
   )
 }
-

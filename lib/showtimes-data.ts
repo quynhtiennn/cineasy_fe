@@ -6,8 +6,6 @@ export interface Ticket {
     seatNumber: number;
 }
 
-
-
 export interface Showtime {
     id: number;
     startTime: string;
@@ -36,16 +34,6 @@ export interface Seat {
     seatNumber: number;
     seatType: string;
 }
-
-/* export async function getMovies(): Promise<Movie[]> {
-    const res = await fetch("http://localhost:8080/movies", {
-        cache: "no-store",
-    });
-    if (!res.ok) throw new Error("Failed to fetch movies");
-
-    const data = await res.json();
-    return data.result;
-} */
 
 
 

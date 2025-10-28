@@ -7,7 +7,7 @@ import { useBooking } from "@/contexts/booking-context"
 
 export default function ShowtimeList({ showtimes }: { showtimes: any[] }) {
   const router = useRouter()
-  const { user } = useBooking() // assume you store user/token here
+  const { user } = useBooking() 
 
   const handleSelect = (showtimeId: number) => {
     if (!user) {

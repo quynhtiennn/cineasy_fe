@@ -1,14 +1,14 @@
+
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getMovieById } from "@/lib/movies-data";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, Star, User } from "lucide-react";
 import ShowtimeList from "@/components/showtime-list"
 
-export default async function MovieDetailPage({params,}: {params: { id: number };}) {
-    const movie = await getMovieById(params.id);
+export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
+    const movie = await getMovieById(Number(id))
 
     if (!movie) {
         notFound();

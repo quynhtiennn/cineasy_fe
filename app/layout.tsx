@@ -9,8 +9,11 @@ import { Navigation } from "@/components/navigation"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "CineMax - Book Your Movie Tickets",
+  title: "Cineasy - Book Your Movie Tickets",
   description: "Premium movie ticket booking experience",
+  icons: {
+    icon: "/logo.png", 
+  },
   generator: "v0.app",
 }
 
