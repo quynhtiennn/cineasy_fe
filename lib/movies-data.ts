@@ -68,7 +68,7 @@ export const movies: Movie[] = [
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export async function getMovies(): Promise<Movie[]> {
-    const res = await fetch("http://localhost:8080/movies", {
+    const res = await fetch(`${API_BASE}/movies`, {
         cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch movies");
@@ -78,7 +78,7 @@ export async function getMovies(): Promise<Movie[]> {
 }
 
 export async function getMovieById(id: number): Promise<Movie> {
-    const res = await fetch(`http://localhost:8080/movies/${id}`, {
+    const res = await fetch(`${API_BASE}/movies/${id}`, {
         cache: "no-store",
     });
     if (!res.ok) throw new Error("Movie not found");
