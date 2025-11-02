@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Cineasy - Book Your Movie Tickets",
   description: "Premium movie ticket booking experience",
   icons: {
-    icon: "/logo.png", 
+    icon: "/logo.svg", 
   },
   generator: "v0.app",
 }

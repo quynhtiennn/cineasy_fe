@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Check } from "lucide-react"
 import { useBooking } from "@/contexts/booking-context"
+import LoadingIcon from "@/components/loading-icon";
+
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
@@ -94,11 +96,7 @@ export default function BookingPage({ bookingId }: { bookingId: string }) {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading booking details...</p>
-      </div>
-    )
+   return <LoadingIcon />
   }
 
   // Already paid

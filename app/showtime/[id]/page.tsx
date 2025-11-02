@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft} from "lucide-react"
 import Link from "next/link"
+import Loading from "./loading"
+import LoadingIcon from "@/components/loading-icon"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL 
 
@@ -64,7 +66,7 @@ export default function ShowtimePage({ params }: { params: Promise<{ id: string 
     if (user) fetchShowtime()
   }, [id, user, token, logout, router])
 
-  if (!showtime) return <div className="p-8 text-center">Loading...</div>
+  if (!showtime) return <LoadingIcon />
 
   const totalRows = showtime.totalRows
   const ROWS = Array.from({ length: totalRows }, (_, i) => String.fromCharCode(65 + i))
