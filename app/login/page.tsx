@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { Film } from "lucide-react"
 import { useBooking } from "@/contexts/booking-context"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
@@ -23,14 +22,12 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  
-
-     // Skip login if already logged in
+  // Auto redirect if already logged in
   useEffect(() => {
-    if (user) router.replace(redirect)
+    if (user?.enabled) router.replace(redirect)
+    else if (user && !user.enabled) router.replace("/confirmEmail")
   }, [user, redirect, router])
 
-  //  Main submit handler for both login and signup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -47,9 +44,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      const url = isLogin
-        ? `${API_BASE}/auth/login`
-        : `${API_BASE}/users`
+      const url = isLogin ? `${API_BASE}/auth/login` : `${API_BASE}/users`
       const body = JSON.stringify({ username, password })
 
       const res = await fetch(url, {
@@ -59,38 +54,48 @@ export default function LoginPage() {
       })
 
       const data = await res.json()
-      if (!res.ok || !data?.result?.token) {
-        throw new Error(data?.message || "Authentication failed")
+      if (!res.ok) throw new Error(data?.message || (isLogin ? "Login failed" : "Sign up failed"))
+
+      // For signup: go straight to confirmEmail page
+      if (!isLogin) {
+        router.push("/confirmEmail")
+        return
       }
 
-      const token = data.result.token
-      localStorage.setItem("token", token)
+      // Login successful - read token and enabled flag
+      const token = data.result?.token
+      const enabled = data.result?.enabled
 
-      // update context (just store info)
-      await login(username, token)
+      if (enabled === false) {
+        router.push("/confirmEmail")
+        return
+      }
 
-      // redirect
+      // Require token only (do NOT require enabled to be true)
+      if (!token) throw new Error("Invalid login response")
+
+      // Save token locally
+      localStorage.setItem("token", token)// After successful signup or login
+      
+
+      // Update context (this will call refreshUser and populate user.enabled eventually)
+      await login(username, token)      
+
+      // Otherwise continue to the intended page
       router.push(redirect)
-
     } catch (err: any) {
       console.error(err)
       setError(err.message || "Invalid credentials. Please try again.")
     } finally {
       setIsLoading(false)
     }
+  
   }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-background/80 px-4">
       <Card className="w-full max-w-md border-border/50 bg-background/50 backdrop-blur">
         <div className="p-8">
-          {/* Header */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <Film className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              CineMax
-            </h1>
-          </div>
-
           <h2 className="text-2xl font-bold mb-2 text-center">
             {isLogin ? "Welcome Back" : "Create Account"}
           </h2>
@@ -100,7 +105,6 @@ export default function LoginPage() {
               : "Sign up to start booking tickets"}
           </p>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               id="username"
@@ -110,7 +114,6 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               className="bg-background/50 border-border/50"
             />
-
             <Input
               id="password"
               type="password"
@@ -119,7 +122,6 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="bg-background/50 border-border/50"
             />
-
             {!isLogin && (
               <Input
                 id="confirmPassword"
@@ -152,19 +154,32 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Toggle */}
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              className="text-primary hover:underline font-medium"
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setError("")
-              }}
-            >
-              {isLogin ? "Sign Up" : "Log In"}
-            </button>
-          </p>
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            {isLogin ? (
+              <button
+                type="button"
+                onClick={() => router.push("/forgetPassword")}
+                className="text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button
+                className="text-primary hover:underline font-medium"
+                onClick={() => {
+                  setIsLogin(!isLogin)
+                  setError("")
+                }}
+              >
+                {isLogin ? "Sign Up" : "Log In"}
+              </button>
+            </div>
+          </div>
         </div>
       </Card>
     </div>

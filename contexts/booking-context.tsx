@@ -18,6 +18,7 @@ interface Booking {
 interface User {
   id: number
   name: string
+  enabled: boolean         // ✅ Added enabled flag
   bookings: Booking[]
 }
 
@@ -34,15 +35,15 @@ interface BookingContextType {
   currentBooking: Partial<Booking> | null
   setCurrentBooking: (booking: Partial<Booking> | null) => void
   addBooking: (booking: Booking) => void
-  login: (username: string, token: string) => Promise<void>
+  login: (token: string) => Promise<void>
   logout: () => void
-  refreshUser: () => Promise<void>
+  refreshUser: (activeToken?: string) => Promise<void>
   loading: boolean
 }
 
 // === Config ===
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
-const REFRESH_LIFETIME = Number(process.env.NEXT_PUBLIC_REFRESH_LIFETIME || 24 * 60 * 60 * 1000)
+const REFRESH_LIFETIME = Number(process.env.NEXT_PUBLIC_REFRESH_LIFETIME)
 
 // === Helpers ===
 function isAccessTokenValid(token: string) {
@@ -67,8 +68,6 @@ function isRefreshTokenValid(token: string) {
 
 async function refreshAccessToken(oldToken: string): Promise<string | null> {
   try {
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
-    console.log("API_BASE =", API_BASE)
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -109,14 +108,12 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       const tokenValid = isAccessTokenValid(savedToken)
       const refreshValid = isRefreshTokenValid(savedToken)
 
-      // both expired
       if (!refreshValid) {
         logout()
         setLoading(false)
         return
       }
 
-      // access expired but refresh valid
       let newToken = savedToken
       if (!tokenValid) {
         const refreshed = await refreshAccessToken(savedToken)
@@ -139,7 +136,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("user")
       }
 
-      // fetch latest user info (ensure bookings are current)
       await refreshUser(newToken)
       setLoading(false)
     }
@@ -156,10 +152,10 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   }, [user, token])
 
   // === Login ===
-  const login = async (username: string, token: string) => {
+  const login = async (token: string) => {
     setToken(token)
     const decoded = jwtDecode<JwtPayload>(token)
-    const basicUser: User = { id: decoded.userId, name: decoded.sub, bookings: [] }
+    const basicUser: User = { id: decoded.userId, name: decoded.sub, enabled: false, bookings: [] } // ✅ enabled default false
     setUser(basicUser)
 
     await refreshUser(token)
@@ -171,9 +167,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       try {
         await fetch(`${API_BASE}/auth/logout`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         })
       } catch (err) {
@@ -181,14 +175,12 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Clear everything on the client side
     setUser(null)
     setToken(null)
     setCurrentBooking(null)
     localStorage.removeItem("user")
     localStorage.removeItem("token")
   }
-
 
   // === Refresh user info ===
   const refreshUser = async (activeToken?: string) => {
@@ -204,7 +196,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         const info = data.result
         setUser({
           id: info.id,
-          name: info.username || info.name,
+          name: info.username, //|| info.name,
+          enabled: info.enabled ?? false, // ✅ store enabled status
           bookings: info.bookings || [],
         })
       } else {
