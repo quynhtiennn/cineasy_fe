@@ -25,7 +25,7 @@ export default function LoginPage() {
   // Auto redirect if already logged in
   useEffect(() => {
     if (user?.enabled) router.replace(redirect)
-    else if (user && !user.enabled) router.replace("/confirmEmail")
+    else if (user && !user.enabled) router.replace("/confirm-email")
   }, [user, redirect, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +58,7 @@ export default function LoginPage() {
 
       // For signup: go straight to confirmEmail page
       if (!isLogin) {
-        router.push("/confirmEmail")
+        router.push("/confirm-email")
         return
       }
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
       const enabled = data.result?.enabled
 
       if (enabled === false) {
-        router.push("/confirmEmail")
+        router.push("/confirm-email")
         return
       }
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
       
 
       // Update context (this will call refreshUser and populate user.enabled eventually)
-      await login(username, token)      
+      await login(token)      
 
       // Otherwise continue to the intended page
       router.push(redirect)
@@ -158,7 +158,7 @@ export default function LoginPage() {
             {isLogin ? (
               <button
                 type="button"
-                onClick={() => router.push("/forgetPassword")}
+                onClick={() => router.push("/forgot-password")}
                 className="text-primary hover:underline"
               >
                 Forgot password?

@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail } from "lucide-react"
+import { KeyRound } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
-export default function ConfirmEmailPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleResend = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setMessage("")
@@ -28,16 +28,17 @@ export default function ConfirmEmailPage() {
 
     setIsLoading(true)
     try {
-      const res = await fetch(
-        `${API_BASE}/auth/resend-verification?email=${encodeURIComponent(email)}`,
-        { method: "POST" }
-      )
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
 
       if (res.ok) {
-        setMessage("Verification email has been resent. Please check your inbox.")
+        setMessage("A reset link has been sent to your email address.")
       } else {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data?.message || "Failed to resend verification email.")
+        throw new Error(data?.message || "Failed to send reset link.")
       }
     } catch (err: any) {
       console.error(err)
@@ -48,25 +49,24 @@ export default function ConfirmEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-background/80 px-4">
-      <Card className="w-full max-w-md border-border/50 bg-background/50 backdrop-blur">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4">
+      <Card className="w-full max-w-md border border-gray-800 bg-neutral-900 text-white">
         <div className="p-8">
           <div className="flex items-center gap-3 mb-4">
-            <Mail className="h-12 w-12 text-primary mb-2" />
-            <h1 className="text-2xl font-bold">Confirm your email</h1>
+            <KeyRound className="h-12 w-12 text-primary mb-2" />
+            <h1 className="text-2xl font-bold">Forgot your password?</h1>
           </div>
-          <p className="text-muted-foreground mb-6">
-            We’ve sent a verification link to your email.  
-            Please check your inbox (and spam folder) to verify your account.
+          <p className="text-gray-400 mb-6">
+            Enter the email associated with your account, and we’ll send a link to reset your password.
           </p>
 
-          <form onSubmit={handleResend} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
-              placeholder="Enter your email to resend link"
+              placeholder="Enter your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-background/50 border-border/50"
+              className="bg-neutral-800 border-gray-700 text-white placeholder-gray-500"
             />
 
             {error && (
@@ -84,16 +84,16 @@ export default function ConfirmEmailPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full bg-white text-black hover:bg-gray-200"
             >
-              {isLoading ? "Sending..." : "Resend Verification Email"}
+              {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
           </form>
 
           <Button
             variant="outline"
             onClick={() => router.push("/login")}
-            className="w-full mt-3"
+            className="w-full mt-3 border-gray-700 text-white hover:bg-neutral-800"
           >
             Back to Login
           </Button>
