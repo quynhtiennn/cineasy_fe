@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
+import MovieList from "@/components/movie-list"
 
 export default async function HomePage() {
   const movies = await getMovies();
@@ -43,7 +44,7 @@ export default async function HomePage() {
       </section>
 
       {/* Movies Grid */}
-      <section className="container mx-auto px-4 py-16">
+      {/* <section className="container mx-auto px-4 py-16">
         <div className="mb-8">
           <h2 className="text-3xl font-bold">Now Playing</h2>
           <p className="text-muted-foreground">Book your tickets for the latest releases</p>
@@ -95,7 +96,9 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
-      </section>
+      </section> */}
+      {/* Filterable Movie Grid */}
+      <MovieList movies={movies} />
     </main>
   )
 }

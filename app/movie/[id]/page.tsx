@@ -99,10 +99,10 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
                                     <Star className="mt-1 h-4 w-4 text-muted-foreground" />
                                     <div>
                                         <p className="text-sm font-medium">
-                                            Cast
+                                            Actors
                                         </p>
                                         <p className="text-sm text-muted-foreground">
-                                            {movie.cast}
+                                            {movie.actors}
                                         </p>
                                     </div>
                                 </div>

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft} from "lucide-react"
 import Link from "next/link"
-import Loading from "./loading"
 import LoadingIcon from "@/components/loading-icon"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL 

@@ -9,7 +9,8 @@ export interface Movie {
     posterUrl: string;
     backdropUrl: string;
     director: string;
-    cast: string[];
+    actors: string[];
+    status: string;
     showtimeSummaries: ShowtimeSummary[];
 }
 
