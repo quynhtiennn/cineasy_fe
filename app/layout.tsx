@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { BookingProvider } from "@/contexts/booking-context"
 import { Navigation } from "@/components/navigation"
+import { Footer } from "@/components/footer"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
               <Suspense fallback={null}>
                 <Navigation />
                 {children}
+                <Footer />
               </Suspense>
             </BookingProvider>
         <Analytics />

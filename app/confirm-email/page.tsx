@@ -28,10 +28,14 @@ export default function ConfirmEmailPage() {
 
     setIsLoading(true)
     try {
-      const res = await fetch(
-        `${API_BASE}/auth/resend-verification?email=${encodeURIComponent(email)}`,
-        { method: "POST" }
-      )
+      console.log("Sending email:", email)
+      const res = await fetch(`${API_BASE}/auth/resend-verification-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
 
       if (res.ok) {
         setMessage("Verification email has been resent. Please check your inbox.")

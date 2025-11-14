@@ -39,7 +39,6 @@ export default function VerifyEmailPage() {
           throw new Error(data?.message || "Invalid or expired verification link.")
         }
 
-        // ✅ Correct: save JWT properly
         localStorage.setItem("token", data.result.token)
 
         const jwt = data.result.token

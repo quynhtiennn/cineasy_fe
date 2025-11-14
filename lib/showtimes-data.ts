@@ -18,16 +18,6 @@ export interface Showtime {
     tickets: Ticket[];
 }
 
-export async function getShowtimeById(id: number): Promise<Showtime> {
-    const res = await fetch(`http://localhost:8080/showtimes/${id}`, {
-        cache: "no-store",
-    });
-    if (!res.ok) throw new Error("Showtime not found");
-
-    const data = await res.json();
-    return data.result;
-}
-
 export interface Seat {
     id: number;
     rowLabel: string;
