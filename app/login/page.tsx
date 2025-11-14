@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,7 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get("redirect") || "/"
-  const { login, user } = useBooking()
+  const { login } = useBooking()
 
   const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState("")
@@ -21,12 +21,6 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-
-  // Auto redirect if already logged in
-  useEffect(() => {
-    if (user?.enabled) router.replace(redirect)
-    else if (user && !user.enabled) router.replace("/confirm-email")
-  }, [user, redirect, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,32 +50,25 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.message || (isLogin ? "Login failed" : "Sign up failed"))
 
-      // For signup: go straight to confirmEmail page
+      // Signup: always go to confirm email
       if (!isLogin) {
         router.push("/confirm-email")
         return
       }
 
-      // Login successful - read token and enabled flag
+      // Login flow
       const token = data.result?.token
-      const enabled = data.result?.enabled
 
-      if (enabled === false) {
+      // No token → not enabled
+      if (!token) {
         router.push("/confirm-email")
         return
       }
 
-      // Require token only (do NOT require enabled to be true)
-      if (!token) throw new Error("Invalid login response")
+      // Token exists → enabled → save and login
+      localStorage.setItem("token", token)
+      await login(token)
 
-      // Save token locally
-      localStorage.setItem("token", token)// After successful signup or login
-      
-
-      // Update context (this will call refreshUser and populate user.enabled eventually)
-      await login(token)      
-
-      // Otherwise continue to the intended page
       router.push(redirect)
     } catch (err: any) {
       console.error(err)
@@ -89,7 +76,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  
   }
 
   return (

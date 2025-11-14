@@ -7,6 +7,7 @@ import "./globals.css"
 import { BookingProvider } from "@/contexts/booking-context"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
+import { Providers } from "@/components/provider"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
@@ -26,13 +27,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-            <BookingProvider>
+            <Providers>
               <Suspense fallback={null}>
                 <Navigation />
                 {children}
                 <Footer />
               </Suspense>
-            </BookingProvider>
+            </Providers>
         <Analytics />
       </body>
     </html>
